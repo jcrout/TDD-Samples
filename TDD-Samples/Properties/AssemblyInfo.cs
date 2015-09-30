@@ -18,7 +18,7 @@ using System.Runtime.InteropServices;
 // to COM components.  If you need to access a type in this assembly from 
 // COM, set the ComVisible attribute to true on that type.
 [assembly: ComVisible(false)]
-
+[assembly: InternalsVisibleTo("TDD-Samples.UnitTests")]
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("c5b7bdc0-0317-4406-98c4-45d7a76fdbb6")]
 

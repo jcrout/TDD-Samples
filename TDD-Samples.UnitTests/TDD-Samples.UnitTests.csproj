@@ -50,12 +50,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class1.cs" />
+    <Compile Include="RomanNumeralConverterTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="TDD-Samples.UnitTests.ruleset" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TDD-Samples\TDD-Samples.csproj">
+      <Project>{c5b7bdc0-0317-4406-98c4-45d7a76fdbb6}</Project>
+      <Name>TDD-Samples</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
