@@ -127,5 +127,10 @@ namespace TDD_Samples
 
             return value;
         }
+
+        public int GetNumber(string romanNumeralString)
+        {
+            return -1;
+        }
     }
 }
