@@ -6,16 +6,57 @@ using System.Threading.Tasks;
 
 namespace TDD_Samples
 {
-    public class RomanNumeralConverter
+    /// <summary>
+    ///     Provides functionality to convert integers to roman numerals and vice versa. 
+    /// </summary>
+    public class RomanNumeralConverter : IRomanNumeralConverter
     {
 
-        private int maxValue = 3000;
-        private int minValue = 1;
+        /// <summary>
+        ///     Simple data-container class for storing information about individual roman numerals.
+        /// </summary>
+        private class RomanNumeral
+        {
+            /// <summary>
+            ///     Gets the value of the roman numeral.
+            /// </summary>
+            public int Value { get; }
+
+            /// <summary>
+            ///     Gets the symbol that represents the roman numeral.
+            /// </summary>
+            public char Symbol { get; }
+
+            /// <summary>
+            ///     Gets the RomanNumeral that, when preceeding this RomanNumeral, represents the subtractive notation. 
+            /// </summary>
+            /// <example>
+            ///     Examples include IV to represent 4 instead of IIII, and IX to represent 9 instead of VIIII.
+            /// </example>
+            public RomanNumeral SubtractiveNumeral;
+
+            public RomanNumeral(int value, char symbol)
+            {
+                this.Value = value;
+                this.Symbol = symbol;
+            }
+
+            public override string ToString()
+            {
+                return this.Symbol.ToString();
+            }
+        }
+
+        private const int MaxValue = 3000;
+        private const int MinValue = 1;
 
         private static LinkedList<RomanNumeral> numerals;
         private static LinkedListNode<RomanNumeral> lowestNumeral;
         private static LinkedListNode<RomanNumeral> highestNumeral;
 
+        /// <summary>
+        ///     Initializes the collection of roman numerals.
+        /// </summary>
         static RomanNumeralConverter()
         {
             var romanNumeralI = new RomanNumeral(1, 'I');
@@ -48,40 +89,9 @@ namespace TDD_Samples
             highestNumeral = numerals.Last;
         }
 
-        /// <summary>
-        ///     Simple data-container class for storing information about individual roman numerals.
-        /// </summary>
-        private class RomanNumeral
-        {
-            public int Value { get; }
-            public char Symbol { get; }
-
-            /// <summary>
-            ///     Gets the RomanNumeral that, when preceeding this RomanNumeral, represents the subtractive notation. 
-            /// </summary>
-            /// <example>
-            ///     Examples include IV to represent 4 instead of IIII, and IX to represent 9 instead of VIIII.
-            /// </example>
-            public RomanNumeral SubtractiveNumeral;
-
-            public RomanNumeral(int value, char symbol)
-            {
-                this.Value = value;
-                this.Symbol = symbol;
-            }
-
-            public override string ToString()
-            {
-                return this.Symbol.ToString();
-            }
-        }
-
         public string GetRomanNumeral(int numberToConvert)
         {
-            if (numberToConvert < minValue || numberToConvert > maxValue)
-            {
-                throw new IndexOutOfRangeException();
-            }
+            ThrowIfValueIsOutOfRange(numberToConvert, nameof(numberToConvert));
 
             var builder = new StringBuilder();
             var value = (double)numberToConvert;
@@ -89,7 +99,7 @@ namespace TDD_Samples
 
             do
             {
-                value = this.UpdateAndReturnValueByNumeral(builder, value, currentNumeral.Value);
+                value = UpdateAndReturnValueByNumeral(builder, value, currentNumeral.Value);
                 currentNumeral = currentNumeral.Previous;
             }
             while (currentNumeral != null && value >= 1);
@@ -97,47 +107,16 @@ namespace TDD_Samples
             return builder.ToString();
         }
 
-        private double UpdateAndReturnValueByNumeral(StringBuilder builder, double value, RomanNumeral numeral)
-        {
-            var numeralValue = (double)numeral.Value;
-
-            if (value >= numeralValue)
-            {
-                var count = (int)Math.Floor(value / numeralValue);
-                builder.Append(numeral.Symbol, count);
-
-                value -= (numeralValue * count);
-            }
-
-            if (numeral.SubtractiveNumeral == null)
-            {
-                return value;
-            }
-
-            var subNumeral = numeral.SubtractiveNumeral;
-            var subValue = (double)(numeral.Value - subNumeral.Value);
-
-            if (value >= subValue)
-            {
-                builder.Append(subNumeral.Symbol);
-                builder.Append(numeral.Symbol);
-
-                value -= subValue;
-            }
-
-            return value;
-        }
-
         public int GetNumber(string romanNumeralString)
         {
             if (romanNumeralString == null)
             {
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(romanNumeralString));
             }
 
             if (romanNumeralString.Length == 0)
             {
-                throw new ArgumentException();
+                throw new ArgumentException($"{nameof(romanNumeralString)} cannot be empty.");
             }
 
             int computedValue = 0;
@@ -146,11 +125,8 @@ namespace TDD_Samples
             for (int i = 0; i < romanNumeralString.Length; i++)
             {
                 var numeral = GetRomanNumeralFromChar(romanNumeralString[i]);
-                if (numeral == null)
-                {
-                    throw new ArgumentException();
-                }
-                
+                ThrowIfNumeralNotFound(numeral, romanNumeralString, i, nameof(romanNumeralString));
+
                 if (i == endIndex)
                 {
                     computedValue += numeral.Value;
@@ -158,14 +134,11 @@ namespace TDD_Samples
                 else
                 {
                     var nextNumeral = GetRomanNumeralFromChar(romanNumeralString[i + 1]);
-                    if (nextNumeral == null)
-                    {
-                        throw new ArgumentException();
-                    }
-
+                    ThrowIfNumeralNotFound(nextNumeral, romanNumeralString, i, nameof(romanNumeralString));
+   
                     if (numeral == nextNumeral)
                     {
-                        this.ThrowIfInvalidSubtractiveNotation(romanNumeralString, i);
+                        ThrowIfInvalidSubtractiveNotation(romanNumeralString, i, nameof(romanNumeralString));
 
                         computedValue += numeral.Value;
                         computedValue += numeral.Value;
@@ -188,16 +161,85 @@ namespace TDD_Samples
                 }
 
                 // prevent overflow by checking the value against the max allowed value each time
-                if (computedValue > maxValue)
-                {
-                    throw new IndexOutOfRangeException();
-                }
+                ThrowIfValueIsOutOfRange(computedValue, nameof(romanNumeralString));
             }
 
             return computedValue;
         }
 
-        private void ThrowIfInvalidSubtractiveNotation(string romanNumeralString, int startIndex)
+        private static RomanNumeral GetRomanNumeralFromChar(char symbolChar)
+        {
+            var currentNumeral = highestNumeral;
+
+            do
+            {
+                if (currentNumeral.Value.Symbol == symbolChar)
+                {
+                    return currentNumeral.Value;
+                }
+
+                currentNumeral = currentNumeral.Previous;
+            }
+            while (currentNumeral != null);
+
+            return null;
+        }
+
+        private static void ThrowIfNumeralNotFound(RomanNumeral numeral, string romanNumeralString, int charIndex, string paramName)
+        {
+            if (numeral == null)
+            {
+                throw new ArgumentException($"{paramName} contains invalid char {romanNumeralString[charIndex]} at index {charIndex}.");
+            }
+        }
+
+        private static void ThrowIfValueIsOutOfRange(int value, string paramName)
+        {
+            if (value < MinValue || value > MaxValue)
+            {
+                throw new IndexOutOfRangeException($"{paramName} must be between {MinValue} and {MaxValue}");
+            }
+        }
+
+        private static double UpdateAndReturnValueByNumeral(StringBuilder builder, double value, RomanNumeral numeral)
+        {
+            var numeralValue = (double)numeral.Value;
+
+            if (value >= numeralValue)
+            {
+                var count = (int)Math.Floor(value / numeralValue);
+                builder.Append(numeral.Symbol, count);
+
+                value -= (numeralValue * count);
+            }
+
+            if (numeral.SubtractiveNumeral == null)
+            {
+                return value;
+            }
+            else
+            {
+                return UpdateAndReturnValueBySubtractiveNumeral(builder, value, numeral);
+            }
+        }
+
+        private static double UpdateAndReturnValueBySubtractiveNumeral(StringBuilder builder, double value, RomanNumeral numeral)
+        {
+            var subNumeral = numeral.SubtractiveNumeral;
+            var subValue = (double)(numeral.Value - subNumeral.Value);
+
+            if (value >= subValue)
+            {
+                builder.Append(subNumeral.Symbol);
+                builder.Append(numeral.Symbol);
+
+                value -= subValue;
+            }
+
+            return value;
+        }
+
+        private static void ThrowIfInvalidSubtractiveNotation(string romanNumeralString, int startIndex, string paramName)
         {
             var remainingLength = romanNumeralString.Length - startIndex;
             if (remainingLength < 4)
@@ -219,25 +261,8 @@ namespace TDD_Samples
                 }
             }
 
-            throw new ArgumentException();
+            throw new ArgumentException($"{paramName} must conform to proper subtractive notation (e.g. 4 must be represented as IV rather than IIII");
         }
 
-        private RomanNumeral GetRomanNumeralFromChar(char symbolChar)
-        {
-            var currentNumeral = highestNumeral;
-
-            do
-            {
-                if (currentNumeral.Value.Symbol == symbolChar)
-                {
-                    return currentNumeral.Value;
-                }
-
-                currentNumeral = currentNumeral.Previous;
-            }
-            while (currentNumeral != null);
-
-            return null;
-        }
     }
 }
