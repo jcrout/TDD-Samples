@@ -130,7 +130,114 @@ namespace TDD_Samples
 
         public int GetNumber(string romanNumeralString)
         {
-            return -1;
+            if (romanNumeralString == null)
+            {
+                throw new ArgumentNullException();
+            }
+
+            if (romanNumeralString.Length == 0)
+            {
+                throw new ArgumentException();
+            }
+
+            int computedValue = 0;
+            int endIndex = romanNumeralString.Length - 1;
+
+            for (int i = 0; i < romanNumeralString.Length; i++)
+            {
+                var numeral = GetRomanNumeralFromChar(romanNumeralString[i]);
+                if (numeral == null)
+                {
+                    throw new ArgumentException();
+                }
+                
+                if (i == endIndex)
+                {
+                    computedValue += numeral.Value;
+                }
+                else
+                {
+                    var nextNumeral = GetRomanNumeralFromChar(romanNumeralString[i + 1]);
+                    if (nextNumeral == null)
+                    {
+                        throw new ArgumentException();
+                    }
+
+                    if (numeral == nextNumeral)
+                    {
+                        this.ThrowIfInvalidSubtractiveNotation(romanNumeralString, i);
+
+                        computedValue += numeral.Value;
+                        computedValue += numeral.Value;
+                        i++;
+                    }
+                    else
+                    {
+                        var isSubtractiveNotation = nextNumeral.SubtractiveNumeral == numeral;
+                        if (isSubtractiveNotation)
+                        {
+                            var subValue = nextNumeral.Value - numeral.Value;
+                            computedValue += subValue;
+                            i++;
+                        }
+                        else
+                        {
+                            computedValue += numeral.Value;
+                        }
+                    }
+                }
+
+                // prevent overflow by checking the value against the max allowed value each time
+                if (computedValue > maxValue)
+                {
+                    throw new IndexOutOfRangeException();
+                }
+            }
+
+            return computedValue;
+        }
+
+        private void ThrowIfInvalidSubtractiveNotation(string romanNumeralString, int startIndex)
+        {
+            var remainingLength = romanNumeralString.Length - startIndex;
+            if (remainingLength < 4)
+            {
+                return;
+            }
+
+            var symbol = romanNumeralString[startIndex];
+            if (symbol != 'I' && symbol != 'X' && symbol != 'C')
+            {
+                return;
+            }
+
+            for (int i = startIndex + 1; i < startIndex + 4; i++)
+            {
+                if (romanNumeralString[i] != symbol)
+                {
+                    return;
+                }
+            }
+
+            throw new ArgumentException();
+        }
+
+        private RomanNumeral GetRomanNumeralFromChar(char symbolChar)
+        {
+            var currentNumeral = highestNumeral;
+
+            do
+            {
+                if (currentNumeral.Value.Symbol == symbolChar)
+                {
+                    return currentNumeral.Value;
+                }
+
+                currentNumeral = currentNumeral.Previous;
+            }
+            while (currentNumeral != null);
+
+            return null;
         }
     }
 }
